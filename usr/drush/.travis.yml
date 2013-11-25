@@ -2,7 +2,6 @@
 # whitelist
 branches:
   only:
-    - master
     - 6.x
     - 5.x
 language: php

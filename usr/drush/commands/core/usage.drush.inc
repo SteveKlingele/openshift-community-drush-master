@@ -56,11 +56,6 @@ function usage_drush_exit() {
   }
 }
 
-/**
- * Set option to send usage to Mongolab.
- *
- * See usage_drush_exit() for more information.
- */
 function drush_usage_send() {
   $file = _drush_usage_get_file(TRUE);
   if ($file) {
@@ -68,14 +63,8 @@ function drush_usage_send() {
     drush_set_option('drush_usage_size', 0);
     drush_print(dt('To automatically send anonymous usage data, add the following to a .drushrc.php file: $options[\'drush_usage_send\'] = TRUE;'));
   }
-  else {
-    return drush_set_error('DRUSH_NO_USAGE_FILE', dt('No usage file; set $options[\'drush_usage_log\'] = TRUE; in a .drushrc.php file to enable.'));
-  }
 }
 
-/**
- * Displays usage file.
- */
 function drush_usage_show() {
   $file = _drush_usage_get_file(TRUE);
   if ($file) {
@@ -88,19 +77,12 @@ function drush_usage_show() {
       drush_print($cmd . implode(' --', $options));
     }
   }
-  else {
-    return drush_set_error('DRUSH_NO_USAGE_FILE', dt('No usage file; set $options[\'drush_usage_log\'] = TRUE; in a .drushrc.php file to enable.'));
-  }
 }
 
-/**
- * Returns path to usage file.
- */
 function _drush_usage_get_file($required = FALSE) {
   $file = drush_directory_cache('usage') . '/usage.txt';
   if (!file_exists($file) && $required) {
-    return FALSE;
-
+    return FALSE; // drush_set_error('DRUSH_NO_USAGE_FILE', dt("No usage file; set $options['drush_usage_log'] = TRUE; in a .drushrc.php file to enable."));
   }
   return $file;
 }

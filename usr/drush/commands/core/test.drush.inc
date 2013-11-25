@@ -183,9 +183,8 @@ function simpletest_drush_run_test($class) {
           || (isset($test->results['#exception']) && $test->results['#exception'] > 0) ? 'error' : 'ok');
   drush_log($info['name'] . ' ' . _simpletest_format_summary_line($test->results), $status);
 
-  $test_suites = drush_test_get_results($test_id, $info);
   if ($dir = drush_get_option('xml')) {
-    drush_test_xml_results($test_id, $test_suites, $dir);
+    drush_test_xml_results($test_id, $dir, $info);
   }
 }
 
@@ -227,10 +226,12 @@ function drush_test_get_all_tests() {
   return array($groups, $all_tests);
 }
 
-/*
- * Compile the test results data structure
+/**
+ * Write test results in jUnit XML format.
  */
-function drush_test_get_results($test_id, $info) {
+function drush_test_xml_results($test_id, $dir, $info) {
+  $dir = is_string($dir) ? $dir : '.';
+
   // Get an array of test result objects from the database.
   if (drush_drupal_major_version() >= 7) {
     $results = db_query("SELECT * FROM {simpletest} WHERE test_id = :test_id ORDER BY test_class, message_id", array(':test_id' => $test_id));
@@ -279,14 +280,9 @@ function drush_test_get_results($test_id, $info) {
     }
     // Prepare message.
     $status = str_pad($result->status . ':', 10);
-    $root = drush_get_option('root');
-    if (substr($root, -1) !== '/') {
-      $root .= '/';
-    }
-    $result->file = str_replace($root, '', $result->file);
     $message = strip_tags($result->message, '<a>');  // Jenkins encodes the output so don't use any tags.
     $message = preg_replace('/<a.*?href="([^"]+)".*?>(.*?)<\/a>/', '$1 $2', $message); // Jenkins will turn urls into clickable links.
-    $message = $status . ' [' . $result->message_group . '] ' . $message . ' [' . $result->file . ':' . $result->line . "]\n";
+    $message = $status . ' [' . $result->message_group . '] ' . $message . ' [' . basename($result->file) . ':' . $result->line . "]\n";
     // Everything is logged in system_out.
     $test_case->system_out .= $message;
     // Failures go to failures.
@@ -299,14 +295,7 @@ function drush_test_get_results($test_id, $info) {
       $test_case->system_err .= $message;
     }
   }
-  return $test_suites;
-}
 
-/**
- * Write test results in jUnit XML format.
- */
-function drush_test_xml_results($test_id, $test_suites, $dir) {
-  $dir = is_string($dir) ? $dir : '.';
   // Build an XML document from our results.
   $xml = new DOMDocument('1.0', 'UTF-8');
   foreach ($test_suites as $test_suite) {

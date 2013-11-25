@@ -21,11 +21,6 @@ define('DRUSH_TABLE_VERSION', '1.1.3');
 define('DRUSH_PEAR_BASE_URL', 'http://download.pear.php.net/package/');
 
 /**
- * Used by outputformat engine and config-set in core.
- */
-define('DRUSH_YAML_VERSION', '2.2.1');
-
-/**
  * Log PHP errors to the Drush log. This is in effect until Drupal's error
  * handler takes over.
  */
@@ -799,7 +794,17 @@ function drush_server_home() {
  * Return the name of the user running drush.
  */
 function drush_get_username() {
-  return drush_is_windows() ? getenv("username") : getenv("USER");
+  $name = NULL;
+  if (!$name = getenv("username")) { // Windows
+    if (!$name = getenv("USER")) {
+      // If USER not defined, use posix
+      if (function_exists('posix_getpwuid')) {
+        $processUser = posix_getpwuid(posix_geteuid());
+        $name = $processUser['name'];
+      }
+    }
+  }
+  return $name;
 }
 
 /**
@@ -873,7 +878,7 @@ function drush_get_extensions($include_hidden = TRUE) {
  * @return FALSE if the extension is compatible.
  */
 function drush_extension_check_incompatibility($file) {
-  if (!isset($file->info['core']) || $file->info['core'] != drush_get_drupal_core_compatibility()) {
+  if (!isset($file->info['core']) || $file->info['core'] != DRUPAL_CORE_COMPATIBILITY) {
     return 'Drupal';
   }
   if (version_compare(phpversion(), $file->info['php']) < 0) {
@@ -918,19 +923,4 @@ function drush_drupal_sitewide_directory($major_version = NULL) {
     $major_version = drush_drupal_major_version();
   }
   return ($major_version < 8) ? 'sites/all' : '';
-}
-
-/**
- * Helper function to get core compatibility constant.
- *
- * @return string
- *   The Drupal core compatibility constant.
- */
-function drush_get_drupal_core_compatibility() {
-  if (defined('DRUPAL_CORE_COMPATIBILITY')) {
-    return DRUPAL_CORE_COMPATIBILITY;
-  }
-  elseif (defined('Drupal::CORE_COMPATIBILITY')) {
-    return Drupal::CORE_COMPATIBILITY;
-  }
 }

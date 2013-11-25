@@ -497,6 +497,9 @@ function _drush_bootstrap_drush() {
   // affect these phases.
   drush_sitealias_check_arg();
 
+  // Check to see if we 'use'd a site alias with site-set
+  drush_sitealias_check_site_env();
+
   // Load the config options from Drupal's /drush and sites/all/drush directories,
   // even prior to bootstrapping the root.
   drush_load_config('drupal');
@@ -510,7 +513,7 @@ function _drush_bootstrap_drush() {
   // If drush_load_config defined a site alias that did not
   // exist before, then sitealias check arg might now match
   // against one of those aliases.
-  if (drush_sitealias_check_arg() === TRUE) {
+  if ((drush_sitealias_check_arg() === TRUE) || (drush_sitealias_check_site_env() === TRUE)) {
     $remote_host = drush_get_option('remote-host');
     if (!isset($remote_host)) {
       // Load the config files for the "new" site.
@@ -518,8 +521,6 @@ function _drush_bootstrap_drush() {
       drush_load_config('site');
     }
   }
-  // Check to see if we 'use'd a site alias with site-set
-  drush_sitealias_check_site_env();
 
   _drush_bootstrap_global_options();
 }
@@ -683,20 +684,16 @@ function _drush_bootstrap_drupal_root() {
   $version = drush_drupal_version();
   $major_version = drush_drupal_major_version();
 
-  if ($major_version <= 5) {
+  // For Drupal 8, use the master branch of Drush.
+  if ($major_version <= 5 || $major_version >= 8) {
     drush_set_error('DRUSH_DRUPAL_VERSION_UNSUPPORTED', dt('Drush !drush_version does not support Drupal !major_version. See http://drupal.org/project/drush for more information.', array('!drush_version' => DRUSH_VERSION, '!major_version' => $major_version)));
   }
   else {
-    if ($major_version <= 7) {
-      define('DRUPAL_ROOT', $drupal_root);
-      $core = DRUPAL_ROOT;
-    }
-    else {
-      $core = DRUPAL_ROOT . '/core';
-    }
+    define('DRUPAL_ROOT', $drupal_root);
 
     // DRUSH_DRUPAL_CORE should point to the /core folder in Drupal 8+ or to DRUPAL_ROOT
     // in prior versions.
+    $core = $major_version >= 8 ? DRUPAL_ROOT . '/core' : DRUPAL_ROOT;
     drush_set_context('DRUSH_DRUPAL_CORE', $core);
     define('DRUSH_DRUPAL_CORE', $core);
 

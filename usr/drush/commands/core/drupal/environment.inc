@@ -69,7 +69,7 @@ function drush_check_module_dependencies($modules, $module_info) {
       // check for version incompatibility
       foreach ($dependencies as $dependency_name => $v) {
         $current_version = $module_info[$dependency_name]->info['version'];
-        $current_version = str_replace(drush_get_drupal_core_compatibility() . '-', '', $current_version);
+        $current_version = str_replace(DRUPAL_CORE_COMPATIBILITY . '-', '', $current_version);
         $incompatibility = drupal_check_incompatibility($v, $current_version);
         if (!is_null($incompatibility)) {
           $status[$key]['error'] = array(
@@ -145,7 +145,7 @@ function drush_module_enable($modules) {
   // The list of modules already have all the dependencies, but they might not
   // be in the correct order. Still pass $enable_dependencies = TRUE so that
   // Drupal will enable the modules in the correct order.
-  module_install($modules);
+  module_enable($modules);
   // Flush all caches.
   drupal_flush_all_caches();
 }
@@ -157,7 +157,12 @@ function drush_module_enable($modules) {
  *   Array of module names
  */
 function drush_module_disable($modules) {
-  drush_set_error('DRUSH_MODULE_DISABLE', dt('Drupal 8 does not support disabling modules.'));
+  // The list of modules already have all the dependencies, but they might not
+  // be in the correct order. Still pass $enable_dependencies = TRUE so that
+  // Drupal will enable the modules in the correct order.
+  module_disable($modules);
+  // Flush all caches.
+  drupal_flush_all_caches();
 }
 
 /**
@@ -167,7 +172,14 @@ function drush_module_disable($modules) {
  *   Array of module names
  */
 function drush_module_uninstall($modules) {
-  module_uninstall($modules);
+  require_once DRUSH_DRUPAL_CORE . '/includes/install.inc';
+  // Break off 8.x functionality when we get another change.
+  if (drush_drupal_major_version() >= 8) {
+    module_uninstall($modules);
+  }
+  else {
+    drupal_uninstall_modules($modules);
+  }
 }
 
 /**

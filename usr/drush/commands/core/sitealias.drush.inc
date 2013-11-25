@@ -63,6 +63,14 @@ function sitealias_drush_command() {
       'drush site-set' => 'Without an argument, any existing site becomes unset.',
     ),
   );
+  // @deprecated and hidden as of 6.0.1. Use site-set without an argument.
+  $items['site-reset'] = array(
+    'description' => 'Reset a persistently set site.',
+    'bootstrap' => DRUSH_BOOTSTRAP_DRUSH,
+    'handle-remote-commands' => TRUE,
+    'aliases' => array('unuse'),
+    'hidden' => TRUE,
+  );
   return $items;
 }
 
@@ -365,5 +373,15 @@ function drush_sitealias_site_set($site = '@none') {
     else {
       drush_set_error('DRUPAL_SITE_NOT_FOUND', dt("Could not find a site definition for !site.", array('!site' => $site)));
     }
+  }
+}
+
+/**
+ * Deletes the file that stores the DRUPAL_SITE variable for persistent
+ * site switching.
+ */
+function drush_sitealias_site_reset() {
+  if (($filename = drush_sitealias_get_envar_filename()) && file_exists($filename)) {
+    drush_delete_dir($filename);
   }
 }
